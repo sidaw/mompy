@@ -4,8 +4,7 @@
 Solve a given moment matrix using various ways.
 """
 
-from cvxopt import matrix, sparse, spmatrix, solvers
-import MomentMatrix as mm
+from cvxopt import matrix, sparse, spmatrix
 
 import sympy as sp
 import numpy as np
@@ -76,7 +75,6 @@ def solve_moments_with_constraints(symbols, constraints, deg, slack = 1e-3):
     Use @symbols with basis bounded by degree @deg.
     Also use the constraints.
     """
-    from cvxopt import solvers
     M = MomentMatrix(deg, symbols, morder='grevlex')
 
     cin = M.get_cvxopt_inputs(constraints, slack = slack)

@@ -8,8 +8,6 @@ import numpy as np
 import scipy.linalg # for schur decomp, which np doesnt have
 import numpy.linalg # for its norm, which suits us better than scipy
 import util
-import ipdb
-import MomentMatrix as mm
 
 def dict_mono_to_ind(monolist):
     dict = {}
