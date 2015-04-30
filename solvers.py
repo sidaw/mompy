@@ -8,10 +8,8 @@ from cvxopt import matrix, sparse, spmatrix
 
 import sympy as sp
 import numpy as np
-
 import util
 import ipdb
-
 
 _debug_mmsolvers = False
 
