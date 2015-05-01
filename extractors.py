@@ -16,7 +16,7 @@ def dict_mono_to_ind(monolist):
         dict[mono]=i
     return dict
 
-def extract_solutions_lasserre(MM, ys, Kmax=10, tol=1e-5):
+def extract_solutions_lasserre(MM, ys, Kmax=10, tol=1e-1):
     """
     extract solutions via (unstable) row reduction described by Lassarre and used in gloptipoly
     MM is a moment matrix, and ys are its completed values
@@ -29,7 +29,9 @@ def extract_solutions_lasserre(MM, ys, Kmax=10, tol=1e-5):
     # now using Lassarre's notation in the extraction section of
     # "Moments, Positive Polynomials and their Applications"
     T,Ut = util.srref(Vs[0:count,:])
-    print 'the biggest singular value we are losing is %f' % Sigma[count]
+
+    if Sigma[count] <= tol:
+        print 'lost %.7f' % Sigma[count]
     # inplace!
     util.row_normalize_leadingone(Ut)
 
@@ -107,14 +109,84 @@ def extract_solutions_dreesen_proto(MM, ys, Kmax=10, tol=1e-5):
         
     return sols
 
+def extract_solutions_dreesen(MM, ys, Kmax=10, tol=1e-5):
+    """
+    extract solutions dreesen's nullspace method
+    """
+    M = MM.numeric_instance(ys)
+    Us,Sigma,Vs=sc.linalg.svd(M)
+    
+    count = min(Kmax,sum(Sigma>tol))
+    Z = Us[:,0:count]
+    print 'the next biggest eigenvalue we are losing is %f' % Sigma[count]
+
+    dict_row_monos = dict_mono_to_ind(MM.row_monos)
+    
+    sols = {}
+    
+    S1list = []
+    Sglist = []
+    it = 0 # i total
+    for var in MM.vars:
+        S1 = np.zeros( (len(MM.row_monos), len(MM.row_monos)) )
+        Sg = np.zeros( (len(MM.row_monos), len(MM.row_monos)) )
+        # a variable is in basis of the current var if var*basis in row_monos
+        basis = []
+        i = 0
+        for mono in MM.row_monos:
+            if mono*var in MM.row_monos:
+                basis.append(mono)
+                basisind = dict_row_monos[mono]
+                gind = dict_row_monos[mono*var]
+                S1[i, basisind] = 1
+                Sg[i, gind] = 1
+                i += 1
+        S1 = S1[0:i,:]
+        Sg = Sg[0:i,:]
+        S1list.append(S1)
+        Sglist.append(Sg)
+
+    S1s = np.zeros( (len(MM.row_monos)*len(MM.vars), len(MM.row_monos)) )
+    Sgs = np.zeros( (len(MM.row_monos)*len(MM.vars), len(MM.row_monos)) )
+
+    r = 0
+    for i in xrange(len(S1list)):
+        S1i = S1list[i]
+        Sgi = Sglist[i]
+        numrow = S1i.shape[0]
+        S1s[r:r+numrow, :] = S1i
+        Sgs[r:r+numrow, :] = Sgi
+        r = r + numrow
+                
+    S1s = S1s[0:r,:]
+    Sgs = Sgs[0:r,:]
+
+    A = Sgs.dot(Z)
+    B = S1s.dot(Z)
+    
+    __,__,P = np.linalg.svd(np.random.randn(count,r), full_matrices = False)
+    Dproj, V = sc.linalg.eig(P.dot(A),P.dot(B))
+    
+    sols = {}
+    for i,var in enumerate(MM.vars):
+        Ai = Sglist[i].dot(Z)
+        Bi = S1list[i].dot(Z)
+        AiVBiV = sc.sum(Ai.dot(V) * Bi.dot(V), 0)
+        BiVBiV = sc.sum(Bi.dot(V) * Bi.dot(V), 0)
+        sols[var] = [ AiVBiV / BiVBiV ]
+    #ipdb.set_trace()
+    return sols
 
 def test_solution_extractors():
     import sympy as sp
+    import core as core
     x = sp.symbols('x')
-    M = mm.MomentMatrix(2, [x], morder='grevlex')
+    M = core.MomentMatrix(2, [x], morder='grevlex')
     ys = [1, 1.5, 2.5, 4.5, 8.5]
-    sols = extract_solutions_lasserre(M, ys)
-    print sols
+    sols_lass = extract_solutions_lasserre(M, ys)
+
+    sols_dree = extract_solutions_dreesen(M, ys)
+    print sols_lass, sols_dree
     print 'true values are 1 and 2'
     
 if __name__ == "__main__":
