@@ -23,7 +23,7 @@ from collections import defaultdict
 import util
 import ipdb
 
-EPS = 1e-7
+EPS = 1e-5
 
 class Measure(object):
     """
