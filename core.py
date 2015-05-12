@@ -17,6 +17,7 @@ import sympy.polys.monomials as mn
 from sympy.polys.orderings import monomial_key
 
 import scipy.linalg # for schur decomp, which np doesnt have
+import scipy.sparse # 
 import numpy.linalg # for its norm, which suits us better than scipy
 
 from collections import defaultdict
@@ -126,6 +127,10 @@ class MomentMatrix(object):
     def __str__(self):
         return 'moment matrix for %d variables: %s' % (self.num_vars, str(self.vars))
 
+    def __len__(self):
+        """returns m for this m by m matrix"""
+        return len(self.row_monos)
+
     def __get_rowofA(self, constr):
         """
         @param - constr is a polynomial constraint expressed as a sympy
@@ -157,11 +162,11 @@ class MomentMatrix(object):
         rowsM = len(self.row_monos)
         lenys = len(self.matrix_monos)
         # consider using sparse Bf
-        Bf = np.zeros((lenys, rowsM*rowsM))
+        Bf = scipy.sparse.lil_matrix((lenys, rowsM*rowsM))
         for i,yi in enumerate(self.matrix_monos):
             indices = self.term_to_indices_dict[yi]
             Bf[i, indices] = 1
-        return Bf
+        return scipy.sparse.csr_matrix(Bf)
         
     def get_Ab(self, constraints=None, cvxoptmode=True):
         num_constrs = len(constraints) if constraints is not None else 0
