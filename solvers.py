@@ -4,7 +4,12 @@
 Solve a given moment matrix using various ways.
 """
 
-from cvxopt import matrix, sparse, spmatrix
+from cvxopt import matrix, sparse, spmatrix, solvers
+solvers.options['maxiters'] = 150
+solvers.options['feastol'] = 1e-6
+solvers.options['abstol'] = 1e-7
+solvers.options['reltol'] = 1e-6
+solvers.options['show_progress'] = True
 
 import sympy as sp
 import numpy as np
@@ -121,7 +126,7 @@ def solve_W(Xstar, rank):
     return Wstar,sol
     
     
-def solve_moments_with_convexiterations(MM, constraints, maxrank = 3, slack = 1e-3, maxiter = 50):
+def solve_moments_with_convexiterations(MM, constraints, maxrank = 3, slack = 1e-3, maxiter = 200):
     """
     Solve using the moment matrix iteratively using the rank constrained convex iterations
     Use @symbols with basis bounded by degree @deg.
@@ -135,15 +140,13 @@ def solve_moments_with_convexiterations(MM, constraints, maxrank = 3, slack = 1e
     tau = []
     for i in xrange(maxiter):
         w = Bf.dot(W.flatten())
-        solsdp = cvxopt.solvers.sdp(cvxopt.matrix(w), Gs=cin['G'], hs=cin['h'], A=cin['A'], b=cin['b'])
+        solsdp = cvxopt.solvers.sdp(cvxopt.matrix(w), Gs=cin['G'], hs=cin['h'], A=cin['A'], b=cin['b'], solver = 'dsdp')
         Xstar = MM.numeric_instance(solsdp['x'])
         W,solW = solve_W(Xstar, maxrank)
         W = np.array(W)
-
         ctau =  np.sum(W * Xstar.flatten())
         if ctau < 1e-3:
             break
-        
         tau.append(ctau)
         
     #ipdb.set_trace()
