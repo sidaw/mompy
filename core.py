@@ -191,6 +191,29 @@ class MomentMatrix(object):
             bnp = bnp[idx, :]
 
         return Anp, bnp
+    
+    def get_Ab_slack(self, constraints=None, abs_slack=0, rel_stack=0, slackvector=0):
+        num_constrs = len(constraints) if constraints is not None else 0
+        Anp = np.zeros((num_constrs, self.num_matrix_monos))
+        bnp = np.zeros((num_constrs,1))
+        if constraints is not None:
+            for i,constr in enumerate(constraints):
+                Anp[i,:] = self.__get_rowofA(constr)
+                
+        Aslack = np.zeros((2*num_constrs+2, self.num_matrix_monos))
+        bslack = np.zeros((2*num_constrs+2,1))
+
+        Aslack[0:num_constrs,:] = Anp
+        Aslack[num_constrs:-2,:] = -Anp
+        Aslack[-1,0] = 1
+        bslack[-1] = 1
+        Aslack[-2,0] = -1
+        bslack[-2] = -1
+        
+        Aslack[0:num_constrs,1] += abs_slack + np.abs(Aslack[0:num_constrs,1])*rel_stack + slackvector
+        Aslack[num_constrs:-2,1] -= abs_slack + np.abs(Aslack[num_constrs:-2,1])*rel_stack + slackvector
+
+        return Aslack, bslack
         
     def numeric_instance(self, ys):
         """

@@ -60,19 +60,23 @@ def get_cvxopt_inputs(MM, constraints = None, sparsemat = True, filter = 'even',
     b = matrix(bnp)
 
     indicatorlist = MM.get_LMI_coefficients()
-
+    Glnp,hlnp = MM.get_Ab_slack(constraints)
+    hl =  matrix(hlnp)
+    
     if sparsemat:
         G = [sparse(indicatorlist).trans()]
         A = sparse(matrix(Anp))
+        Gl = sparse(matrix(Glnp))
     else:
         G = [matrix(indicatorlist).trans()]
         A = matrix(Anp)
+        Gl = matrix(Glnp)
 
     num_row_monos = len(MM.row_monos)
-    h = [matrix(np.zeros((num_row_monos,num_row_monos)))]    
+    h = [matrix(np.zeros((num_row_monos,num_row_monos)))]
 
-    return {'c':c, 'G':G, 'h':h, 'A':A, 'b':b}
-
+    return {'c':c, 'G':G, 'h':h, 'A':A, 'b':b, 'Gl':Gl, 'hl':hl}
+ 
 
 def solve_moments_with_constraints(symbols, constraints, deg, slack = 1e-3):
     """
@@ -140,7 +144,8 @@ def solve_moments_with_convexiterations(MM, constraints, maxrank = 3, slack = 1e
     tau = []
     for i in xrange(maxiter):
         w = Bf.dot(W.flatten())
-        solsdp = cvxopt.solvers.sdp(cvxopt.matrix(w), Gs=cin['G'], hs=cin['h'], A=cin['A'], b=cin['b'], solver = 'dsdp')
+        #solsdp = cvxopt.solvers.sdp(cvxopt.matrix(w), Gs=cin['G'], hs=cin['h'], A=cin['A'], b=cin['b'])
+        solsdp = cvxopt.solvers.sdp(cvxopt.matrix(w), Gs=cin['G'], hs=cin['h'], Gl=cin['Gl'], hl=cin['hl'])
         Xstar = MM.numeric_instance(solsdp['x'])
         W,solW = solve_W(Xstar, maxrank)
         W = np.array(W)
