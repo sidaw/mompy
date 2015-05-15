@@ -192,7 +192,7 @@ class MomentMatrix(object):
 
         return Anp, bnp
     
-    def get_Ab_slack(self, constraints=None, abs_slack=0, rel_stack=0, slackvector=0):
+    def get_Ab_slack(self, constraints=None, abs_slack=1e-2, rel_stack=1e-2, slackvector=0):
         num_constrs = len(constraints) if constraints is not None else 0
         Anp = np.zeros((num_constrs, self.num_matrix_monos))
         bnp = np.zeros((num_constrs,1))
