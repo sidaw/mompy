@@ -4,7 +4,7 @@
 Solve a given moment matrix using various ways.
 """
 
-from cvxopt import matrix, sparse, spmatrix, solvers
+from cvxopt import matrix, sparse, spmatrix, spdiag, solvers
 solvers.options['maxiters'] = 150
 solvers.options['feastol'] = 1e-6
 solvers.options['abstol'] = 1e-7
@@ -13,6 +13,7 @@ solvers.options['show_progress'] = True
 
 import sympy as sp
 import numpy as np
+import scipy as sc
 import util
 import ipdb
 import itertools
@@ -89,6 +90,72 @@ def solve_moments_with_constraints(symbols, constraints, deg, slack = 1e-3):
     cin = M.get_cvxopt_inputs(constraints, slack = slack)
     sol = solvers.sdp(cin['c'], Gs=cin['G'], hs=cin['h'], A=cin['A'], b=cin['b'])
     return M, sol
+
+def get_constraint_row_monos(MM, constr):
+    Ai = np.zeros(len(MM.row_monos))
+    coefdict = constr.as_coefficients_dict()
+    for i,yi in enumerate(len(MM.row_monos)):
+        Ai[i] = coefdict.get(yi,0)
+    return Ai
+
+def solve_generalized_mom(MM, constraints, Eggt, maxiter = 10):
+    """
+    solve using iterative GMM using the quadratic cone program
+    func_W takes a solved instance and returns the weighting matrix,
+    this function has access to individual data points
+    @params
+    constraints - E[g(x,X)] = f(x) - h(X) that are supposed to be 0
+    Eggt - the function handle takes current f(x) and estimates
+    E[g(x,X)g(x,X)'] \in \Re^{n \times n}, the information matrix
+    maxiter - times to run the iterative GMM
+    """
+    N = len(constraints)
+    D = len(MM.matrix_monos)
+    sr = len(MM.row_monos)
+    
+    A,b = MM.get_Ab(constraints, cvxoptmode = False)
+    # augumented constraint matrix introduces slack variables g
+    A_aug = sparse(matrix(sc.hstack((A, 1*sc.eye(N+1)[:,:-1]))))
+    P = spdiag([matrix(0*np.eye(D)), matrix(np.eye(N))])
+    b = matrix(b)
+       
+    indicatorlist = MM.get_LMI_coefficients()
+    G = sparse(indicatorlist).trans()
+    V,I,J = G.V, G.I, G.J, 
+    Gaug = sparse(spmatrix(V,I,J,size=(sr*sr, N + D)))
+    h = matrix(np.zeros((sr*sr,1)))
+
+    dims = {}
+    dims['l'] = 0
+    dims['q'] = []
+    dims['s'] = [sr]
+
+    Bf = MM.get_Bflat()
+    R = np.random.rand(len(MM), len(MM))
+    #W = R.dot(R.T)
+    W = np.eye(len(MM))
+    w = Bf.dot(W.flatten())[:,np.newaxis]
+    q = 1e-5*matrix(np.vstack( (w,np.zeros((N,1))) ))
+    
+    ipdb.set_trace()
+    for i in xrange(maxiter):
+        sol = solvers.coneqp(P, q, G=Gaug, h=h, dims=dims, A=A_aug, b=b)
+    sol['x'] = sol['x'][0:D]
+    return sol
+    
+
+def solve_moments_with_constraints(symbols, constraints, deg, slack = 1e-3):
+    """
+    Solve using the moment matrix.
+    Use @symbols with basis bounded by degree @deg.
+    Also use the constraints.
+    """
+    M = MomentMatrix(deg, symbols, morder='grevlex')
+
+    cin = M.get_cvxopt_inputs(constraints, slack = slack)
+    sol = solvers.sdp(cin['c'], Gs=cin['G'], hs=cin['h'], A=cin['A'], b=cin['b'])
+    return M, sol
+    
 
 # solve for the weight matrix in convex iteration
 def solve_W(Xstar, rank):
