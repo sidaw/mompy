@@ -134,13 +134,13 @@ def solve_generalized_mom(MM, constraints, Eggt, maxiter = 10):
     R = np.random.rand(len(MM), len(MM))
     #W = R.dot(R.T)
     W = np.eye(len(MM))
+    w = Bf.dot(W.flatten())[:,np.newaxis]
     q = 1e-5*matrix(np.vstack( (w,np.zeros((N,1))) ))
     
     #ipdb.set_trace()
     for i in xrange(maxiter):
         w = Bf.dot(W.flatten())[:,np.newaxis]
         sol = solvers.coneqp(P, q, G=Gaug, h=h, dims=dims, A=A_aug, b=b)
-        Wnew - 
     sol['x'] = sol['x'][0:D]
     return sol
     
