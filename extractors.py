@@ -9,6 +9,7 @@ import scipy as sc
 import scipy.linalg # for schur decomp, which np doesnt have
 import numpy.linalg # for its norm, which suits us better than scipy
 import util
+import ipdb
 
 def dict_mono_to_ind(monolist):
     dict = {}
@@ -24,12 +25,11 @@ def extract_solutions_lasserre(MM, ys, Kmax=10, tol=1e-1):
     M = MM.numeric_instance(ys)
     Us,Sigma,Vs=np.linalg.svd(M)
     #
-    #ipdb.set_trace()
     count = min(Kmax,sum(Sigma>tol))
     # now using Lassarre's notation in the extraction section of
     # "Moments, Positive Polynomials and their Applications"
     T,Ut = util.srref(Vs[0:count,:])
-
+    
     if Sigma[count] <= tol:
         print 'lost %.7f' % Sigma[count]
     # inplace!
@@ -63,7 +63,7 @@ def extract_solutions_lasserre(MM, ys, Kmax=10, tol=1e-1):
     quadf = lambda A, x : np.dot(x, np.dot(A,x))
     for var in MM.vars:
         sols[var] = [quadf(Ns[var], Q[:,j]) for j in range(bl)]
-    #ipdb.set_trace()
+    
     return sols
 
 def extract_solutions_dreesen_proto(MM, ys, Kmax=10, tol=1e-5):

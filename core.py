@@ -192,7 +192,7 @@ class MomentMatrix(object):
 
         return Anp, bnp
     
-    def get_Ab_slack(self, constraints=None, abs_slack=1e-2, rel_stack=1e-2, slackvector=0):
+    def get_Ab_slack(self, constraints=None, abs_slack=1e-2, rel_slack=1e-2, slackvector=0):
         num_constrs = len(constraints) if constraints is not None else 0
         Anp = np.zeros((num_constrs, self.num_matrix_monos))
         bnp = np.zeros((num_constrs,1))
@@ -209,9 +209,11 @@ class MomentMatrix(object):
         bslack[-1] = 1
         Aslack[-2,0] = -1
         bslack[-2] = -1
-        
-        Aslack[0:num_constrs,1] += abs_slack + np.abs(Aslack[0:num_constrs,1])*rel_stack + slackvector
-        Aslack[num_constrs:-2,1] -= abs_slack + np.abs(Aslack[num_constrs:-2,1])*rel_stack + slackvector
+        #ipdb.set_trace()
+        #Aslack[0:num_constrs,0] += np.abs(Aslack[0:num_constrs,0])*1e-2 
+        #Aslack[num_constrs:-2,0] += np.abs(Aslack[num_constrs:-2,0])*1e-2
+        bslack[0:num_constrs] += abs_slack + slackvector
+        bslack[num_constrs:-2] += abs_slack + slackvector
 
         return Aslack, bslack
         
