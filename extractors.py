@@ -9,6 +9,7 @@ import scipy as sc
 import scipy.linalg # for schur decomp, which np doesnt have
 import numpy.linalg # for its norm, which suits us better than scipy
 import util
+import itertools
 import ipdb
 
 def dict_mono_to_ind(monolist):
@@ -76,7 +77,10 @@ def extract_solutions_lasserre_average(MM, ys, Kmax=10, tol=1e-6, numiter=10):
     count = min(Kmax,sum(Sigma>tol))
     # now using Lassarre's notation in the extraction section of
     # "Moments, Positive Polynomials and their Applications"
+    sols = {}
+    totalweight = 0;
     for i in range(numiter):
+        
         T,Ut = util.srref(M[0:count,:])
         
         if Sigma[count] <= tol:
@@ -106,13 +110,10 @@ def extract_solutions_lasserre_average(MM, ys, Kmax=10, tol=1e-6, numiter=10):
             N+=Ns[var]*np.random.randn()
         T,Q=scipy.linalg.schur(N)
 
-        sols = {}
-
         quadf = lambda A, x : np.dot(x, np.dot(A,x))
         for var in MM.vars:
             sols[var] = np.array([quadf(Ns[var], Q[:,j]) for j in range(bl)])
             
-    ipdb.set_trace()
     return sols
 
 def extract_solutions_dreesen_proto(MM, ys, Kmax=10, tol=1e-5):
