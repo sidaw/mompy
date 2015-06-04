@@ -17,7 +17,7 @@ def dict_mono_to_ind(monolist):
         dict[mono]=i
     return dict
 
-def extract_solutions_lasserre(MM, ys, Kmax=10, tol=1e-1):
+def extract_solutions_lasserre(MM, ys, Kmax=10, tol=1e-6):
     """
     extract solutions via (unstable) row reduction described by Lassarre and used in gloptipoly
     MM is a moment matrix, and ys are its completed values
@@ -42,8 +42,7 @@ def extract_solutions_lasserre(MM, ys, Kmax=10, tol=1e-1):
 
     basis = [MM.row_monos[i] for i in ind_leadones]
     dict_row_monos = dict_mono_to_ind(MM.row_monos)
-
-    #ipdb.set_trace()
+    
     Ns = {}
     bl = len(basis)
     # create multiplication matrix for each variable
@@ -62,9 +61,10 @@ def extract_solutions_lasserre(MM, ys, Kmax=10, tol=1e-1):
 
     quadf = lambda A, x : np.dot(x, np.dot(A,x))
     for var in MM.vars:
-        sols[var] = [quadf(Ns[var], Q[:,j]) for j in range(bl)]
-    
+        sols[var] = np.array([quadf(Ns[var], Q[:,j]) for j in range(bl)])
+    #ipdb.set_trace()
     return sols
+
 
 def extract_solutions_dreesen_proto(MM, ys, Kmax=10, tol=1e-5):
     """
@@ -173,7 +173,7 @@ def extract_solutions_dreesen(MM, ys, Kmax=10, tol=1e-5):
         Bi = S1list[i].dot(Z)
         AiVBiV = sc.sum(Ai.dot(V) * Bi.dot(V), 0)
         BiVBiV = sc.sum(Bi.dot(V) * Bi.dot(V), 0)
-        sols[var] = [ AiVBiV / BiVBiV ]
+        sols[var] = AiVBiV / BiVBiV
     #ipdb.set_trace()
     return sols
 
