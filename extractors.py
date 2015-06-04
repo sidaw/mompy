@@ -65,6 +65,55 @@ def extract_solutions_lasserre(MM, ys, Kmax=10, tol=1e-6):
     #ipdb.set_trace()
     return sols
 
+def extract_solutions_lasserre_average(MM, ys, Kmax=10, tol=1e-6, numiter=10):
+    """
+    extract solutions via (unstable) row reduction described by Lassarre and used in gloptipoly
+    MM is a moment matrix, and ys are its completed values
+    """
+    M = MM.numeric_instance(ys)
+    Us,Sigma,Vs=np.linalg.svd(M)
+    #
+    count = min(Kmax,sum(Sigma>tol))
+    # now using Lassarre's notation in the extraction section of
+    # "Moments, Positive Polynomials and their Applications"
+    for i in range(numiter):
+        T,Ut = util.srref(M[0:count,:])
+        
+        if Sigma[count] <= tol:
+            print 'lost %.7f' % Sigma[count]
+        # inplace!
+        util.row_normalize_leadingone(Ut)
+
+        couldbes = np.where(Ut>0.9)
+        ind_leadones = np.zeros(Ut.shape[0], dtype=np.int)
+        for j in reversed(range(len(couldbes[0]))):
+            ind_leadones[couldbes[0][j]] = couldbes[1][j]
+
+        basis = [MM.row_monos[i] for i in ind_leadones]
+        dict_row_monos = dict_mono_to_ind(MM.row_monos)
+
+        Ns = {}
+        bl = len(basis)
+        # create multiplication matrix for each variable
+        for var in MM.vars:
+            Nvar = np.zeros((bl,bl))
+            for i,b in enumerate(basis):
+                Nvar[:,i] = Ut[ :,dict_row_monos[var*b] ]
+            Ns[var] = Nvar
+
+        N = np.zeros((bl,bl))
+        for var in Ns:
+            N+=Ns[var]*np.random.randn()
+        T,Q=scipy.linalg.schur(N)
+
+        sols = {}
+
+        quadf = lambda A, x : np.dot(x, np.dot(A,x))
+        for var in MM.vars:
+            sols[var] = np.array([quadf(Ns[var], Q[:,j]) for j in range(bl)])
+            
+    ipdb.set_trace()
+    return sols
 
 def extract_solutions_dreesen_proto(MM, ys, Kmax=10, tol=1e-5):
     """

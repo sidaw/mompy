@@ -85,6 +85,8 @@ def get_constraint_row_monos(MM, constr):
         Ai[i] = coefdict.get(yi,0)
     return Ai
 
+#def gamma_solver(MM, constraints, slack = 1e-2):
+
 def solve_basic_constraints(MM, constraints, slack = 1e-2):
     """
     Solve using the moment matrix.
