@@ -103,7 +103,7 @@ def solve_basic_constraints(MM, constraints, slack = 1e-2):
     #ipdb.set_trace()
     return solsdp
 
-def solve_generalized_mom_coneqp(MM, constraints, pconstraints, maxiter = 1):
+def solve_generalized_mom_coneqp(MM, constraints, pconstraints=None, maxiter = 1):
     """
     solve using iterative GMM using the quadratic cone program
     func_W takes a solved instance and returns the weighting matrix,
