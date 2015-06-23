@@ -166,8 +166,9 @@ class MomentMatrix(object):
 class LocalizingMatrix(object):
     '''
     poly_g is a polynomial that multiplies termwise with a basic
-    moment matrix of smaller size to give the localizing matrices This
-    class depends on the moment matrix class and has exactly the same
+    moment matrix of smaller size to give the localizing matrices
+    
+    This class depends on the moment matrix class and has exactly the same
     monomials as the base moment matrix. So the SDP variables still
     corresponds to matrix_monos
     '''

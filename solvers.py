@@ -19,6 +19,9 @@ import ipdb
 import itertools
 import cvxopt.solvers
 
+from core import MomentMatrix
+from core import LocalizingMatrix
+
 _debug_mmsolvers = False
 
 def monomial_filter(mono, filter='even'):
@@ -85,7 +88,35 @@ def get_constraint_row_monos(MM, constr):
         Ai[i] = coefdict.get(yi,0)
     return Ai
 
-#def gamma_solver(MM, constraints, slack = 1e-2):
+def solve_ith_GMP(MM, objective, gs, hs, slack = 1e-6):
+    """
+    Generalized moment problem solver
+    @param - objective: a sympy expression that is the objective
+    @param - gs: list of contraints defining the semialgebraic set K,
+    each g corresponds to localizing matrices.
+    @param - hs: constraints on the moments,
+     not needed for polynomial optimization.
+    """
+    cin = get_cvxopt_inputs(MM, hs, slack=slack)
+    Bf = MM.get_Bflat()
+    objcoeff,__ = MM.get_Ab([objective], cvxoptmode = False)
+    
+    locmatrices = [LocalizingMatrix(MM, g) for g in gs]
+    Ghs = [get_cvxopt_Gh(lm) for lm in locmatrices]
+
+    # list addition
+    Gs=cin['G'] + [Gh['G'] for Gh in Ghs]
+    hs=cin['h'] + [Gh['h'] for Gh in Ghs]
+    
+    solsdp = cvxopt.solvers.sdp(matrix(objcoeff[0,:]), Gs=Gs, hs=hs, A=cin['A'], b=cin['b'])
+    #ipdb.set_trace()
+    return solsdp
+
+def solve_GMP(objective, gs, hs):
+    # potentially convert relative expressions to normal form
+    for g in gs:
+        if type(g) == sp.relational.GreaterThan
+        else if type(g) ==  sp.relational.LessThan
 
 def solve_basic_constraints(MM, constraints, slack = 1e-2):
     """
@@ -271,9 +302,12 @@ def solve_moments_with_convexiterations(MM, constraints, maxrank = 3, slack = 1e
 def test_mmsolvers():
     # simple test to make sure things run
     from cvxopt import solvers
+    from core import MomentMatrix
+    from core import LocalizingMatrix
+
     print 'testing simple unimixture with a skipped observation, just to test that things run'
     x = sp.symbols('x')
-    M = mm.MomentMatrix(3, [x], morder='grevlex')
+    M = MomentMatrix(3, [x], morder='grevlex')
     constrs = [x-1.5, x**2-2.5, x**4-8.5]
     #constrs = [x-1.5, x**2-2.5, x**3-4.5, x**4-8.5]
     cin = get_cvxopt_inputs(M, constrs, slack = 1e-5)
@@ -285,22 +319,22 @@ def test_mmsolvers():
     #print y
     #print X
 
-    gs = [3-x, 3+x]
-    locmatrices = [mm.LocalizingMatrix(M, g) for g in gs]
+    gs = [2-x, 2+x]
+    locmatrices = [LocalizingMatrix(M, g) for g in gs]
     Ghs = [get_cvxopt_Gh(lm) for lm in locmatrices]
 
     Gs=cin['G'] + [Gh['G'] for Gh in Ghs]
     hs=cin['h'] + [Gh['h'] for Gh in Ghs]
     
-    sol = solvers.sdp(cin['c'], Gs=cin['G'], \
-                  hs=cin['h'], A=cin['A'], b=cin['b'])
+    sol = solvers.sdp(cin['c'], Gs=Gs, \
+                  hs=hs, A=cin['A'], b=cin['b'])
 
     print sol['x']
     print abs(sol['x'][3]-4.5)
     assert(abs(sol['x'][3]-4.5) <= 1e-3)
 
-    import mmextractors
-    print mmextractors.extract_solutions_lasserre(M, sol['x'], Kmax = 2)
+    import extractors
+    print extractors.extract_solutions_lasserre(M, sol['x'], Kmax = 2)
     print 'true values are 1 and 2'
     
 if __name__=='__main__':
