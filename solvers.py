@@ -115,8 +115,10 @@ def solve_ith_GMP(MM, objective, gs, hs, slack = 1e-6):
 def solve_GMP(objective, gs, hs):
     # potentially convert relative expressions to normal form
     for g in gs:
-        if type(g) == sp.relational.GreaterThan
-        else if type(g) ==  sp.relational.LessThan
+        if type(g) == sp.relational.GreaterThan:
+            return 0
+        elif type(g) ==  sp.relational.LessThan:
+            return 0
 
 def solve_basic_constraints(MM, constraints, slack = 1e-2):
     """
