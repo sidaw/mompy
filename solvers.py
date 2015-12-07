@@ -9,7 +9,8 @@ solvers.options['maxiters'] = 150
 solvers.options['feastol'] = 1e-6
 solvers.options['abstol'] = 1e-7
 solvers.options['reltol'] = 1e-6
-solvers.options['show_progress'] = True
+solvers.options['show_progress'] = False
+EPS = 1e-7
 
 import sympy as sp
 import numpy as np
@@ -107,18 +108,60 @@ def solve_ith_GMP(MM, objective, gs, hs, slack = 1e-6):
     # list addition
     Gs=cin['G'] + [Gh['G'] for Gh in Ghs]
     hs=cin['h'] + [Gh['h'] for Gh in Ghs]
-    
+    # print Ghs
     solsdp = cvxopt.solvers.sdp(matrix(objcoeff[0,:]), Gs=Gs, hs=hs, A=cin['A'], b=cin['b'])
+    
     #ipdb.set_trace()
     return solsdp
 
-def solve_GMP(objective, gs, hs):
-    # potentially convert relative expressions to normal form
+
+
+def solve_GMP(objective, gs, hs, rounds = None):
+    """
+    Outer loop of the generalized moment problem solver
+    @param - objective: a sympy expression that is the objective
+    @param - gs: list of contraints defining the semialgebraic set K,
+    each g corresponds to localizing matrices.
+    @param - hs: constraints on the moments,
+     not needed for polynomial optimization.
+    """
+
+    # problem setup here
+    constrs = []
+    syms = objective.free_symbols
+    mindeg = objective.as_poly().total_degree()
     for g in gs:
         if type(g) == sp.relational.GreaterThan:
-            return 0
+            nf = g.lhs - g.rhs
         elif type(g) ==  sp.relational.LessThan:
-            return 0
+            nf = g.rhs - g.lhs
+        constrs += [nf]
+
+        degnf = nf.as_poly().total_degree()
+        if degnf > mindeg: mindeg = degnf
+
+        syms.update(nf.free_symbols)
+        
+    print 'the maximum degree appearing in the problem is %d' % mindeg
+    #for g in constrs:
+    #    print g
+    
+    mdeg = int( (mindeg+1)/2 )
+    if rounds is None:
+        rounds = 2
+
+    objvals = {}
+    for i in range(mdeg,mdeg + rounds):
+        MM = MomentMatrix(i, list(syms), morder='grevlex')
+        soldict = solve_ith_GMP(MM, objective, constrs, hs)
+        soldict['MM'] = MM
+        r =  np.linalg.matrix_rank(MM.numeric_instance(soldict['x']), 1e-4)
+        print 'round=%d out of %d,\t rank=%d,\t obj=%.3f' % (i-mdeg+1, rounds, r, soldict['primal objective'])
+        objvals[i] = soldict['primal objective']
+    return soldict
+
+def solve_polyopt(objective, gs):
+    pass
 
 def solve_basic_constraints(MM, constraints, slack = 1e-2):
     """
@@ -303,10 +346,7 @@ def solve_moments_with_convexiterations(MM, constraints, maxrank = 3, slack = 1e
 
 def test_mmsolvers():
     # simple test to make sure things run
-    from cvxopt import solvers
-    from core import MomentMatrix
-    from core import LocalizingMatrix
-
+    
     print 'testing simple unimixture with a skipped observation, just to test that things run'
     x = sp.symbols('x')
     M = MomentMatrix(3, [x], morder='grevlex')

@@ -221,7 +221,8 @@ class MomentMatrix(object):
         """
         assign the matrix_monos ys and return an np matrix
         """
-        assert(len(ys)==len(self.matrix_monos))
+        
+        assert len(ys)==len(self.matrix_monos), 'the lengths of the moment sequence is wrong'
         
         G = self.get_LMI_coefficients()
         num_inst = np.zeros(len(self.row_monos)**2)
