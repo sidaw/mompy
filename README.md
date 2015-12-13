@@ -1,4 +1,4 @@
-# Intro
+# Mompy
 
 mompy is a package for solving polynomial optimization and the Generalized Moment Problem by relaxing to a semidefinite program. These techniques are described by Lasserre et al. and Parrilo el al. in the references.
 
@@ -33,6 +33,8 @@ gs = [x+y>=4, x+y<=4]
 sol = mp.solvers.solve_GMP(f, gs)
 ```
 
+We also support direct moment constraints in GMP, see the worksheets.
+
 ### Related software and their descriptions
 
 |Software | paper|
@@ -40,7 +42,6 @@ sol = mp.solvers.solve_GMP(f, gs)
 |[GloptiPoly (MATLAB)](http://homepages.laas.fr/henrion/software/gloptipoly/) | [GloptiPoly 3: moments, optimization and semidefinite programming](http://homepages.laas.fr/henrion/papers/gloptipoly.pdf)|
 [SOSTOOLS (MATLAB)](http://www.cds.caltech.edu/sostools/) | [Introducing SOSTOOLS: A General Purpose Sum of Squares Programming Solver](http://www.cds.caltech.edu/~doyle/hot/CDC02_2.pdf)|
 |[ncpol2sdpa (python)](https://pypi.python.org/pypi/ncpol2sdpa/) | [Algorithm 950: Ncpol2sdpa](http://arxiv.org/abs/1308.6029)|
-
 
 ### References
 
