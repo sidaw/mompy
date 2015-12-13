@@ -1,17 +1,20 @@
-# mompy
+# Intro
 
-mompy is a package for solving polynomial optimization and the Generalized Moment Problem. 
-Examples, background and instructions can be found in these ipython worksheets:
+mompy is a package for solving polynomial optimization and the Generalized Moment Problem by relaxing to a semidefinite program. These techniques are described by Lasserre et al. and Parrilo el al. in the references.
 
+Various examples are included in the
 [polynomial optimization worksheet](https://github.com/sidaw/mompy/blob/master/polynomial_optimization.ipynb)
-[extra examples worksheet](https://github.com/sidaw/mompy/blob/master/extra_examples.ipynb)
+and the
+[extra examples worksheet](https://github.com/sidaw/mompy/blob/master/extra_examples.ipynb), which includes a mixture of Gaussians example and a maxcut example. 
 
-This was implemented for our paper
+mompy was used in our paper, which also describes the estimating mixture model setup:
 
-Sida I. Wang, Arun Chaganty, Percy Liang, [Estimating mixture models via mixtures of polynomials](http://papers.nips.cc/paper/5702-estimating-mixture-models-via-mixtures-of-polynomials.pdf), NIPS 2015
+Sida I. Wang, Arun Tejasvi Chaganty, Percy Liang. [Estimating mixture models via mixtures of polynomials](http://papers.nips.cc/paper/5702-estimating-mixture-models-via-mixtures-of-polynomials.pdf). NIPS 2015
 
+## Dependencies
+You need [sympy](http://www.sympy.org/) and [cvxopt](http://cvxopt.org/) in order to use mompy.
 
-## Polynomial Optimization
+## Problem setup
 
 The polynomial optimization problem is to
 ```
@@ -30,15 +33,26 @@ gs = [x+y>=4, x+y<=4]
 sol = mp.solvers.solve_GMP(f, gs)
 ```
 
-[GloptiPoly paper](http://homepages.laas.fr/henrion/papers/gloptipoly3.pdf)
-[solution extraction paper](http://homepages.laas.fr/henrion/papers/extract.pdf) are reproduced.
+### Related software and their descriptions
 
-In the second part, we give the simplest example of estimating a mixture model by solving the Generalized Moment Problem (GMP). 
-Some extensions can be found in [the extra examples worksheet](extra_examples.ipynb). 
-This software was used for our paper
-where we look at some more elaborate settings for the mixture model problem.
+|Software | paper|
+|---------|--------|
+|[GloptiPoly (MATLAB)](http://homepages.laas.fr/henrion/software/gloptipoly/) | [GloptiPoly 3: moments, optimization and semidefinite programming](http://homepages.laas.fr/henrion/papers/gloptipoly.pdf)|
+[SOSTOOLS (MATLAB)](http://www.cds.caltech.edu/sostools/) | [Introducing SOSTOOLS: A General Purpose Sum of Squares Programming Solver](http://www.cds.caltech.edu/~doyle/hot/CDC02_2.pdf)|
+|[ncpol2sdpa (python)](https://pypi.python.org/pypi/ncpol2sdpa/) | [Algorithm 950: Ncpol2sdpa](http://arxiv.org/abs/1308.6029)|
 
-Other implementation for solving the polynomial optimization problem / and Generalized Moment Problem are
-[GloptiPoly](http://homepages.laas.fr/henrion/software/gloptipoly/) and 
-[SOSTOOLS](http://www.cds.caltech.edu/sostools/) in MATLAB, and
-[ncpol2sdpa](https://pypi.python.org/pypi/ncpol2sdpa/) in python described [here](http://arxiv.org/abs/1308.6029).
+
+### References
+
+J. B. Lasserre. Global optimization with polynomials and the problem of moments. SIAM Journal on Optimization, 11(3):796–817, 2001
+
+J. B. Lasserre. Moments, Positive Polynomials and Their Applications. Imperial College Press, 2011.
+
+J. B. Lasserre. A semidefinite programming approach to the generalized problem of moments. Mathematical Programming, 112(1):65–92, 2008.
+
+P. A. Parrilo and B. Sturmfels. Minimizing polynomial functions. Algorithmic and quantitative real algebraic geometry, DIMACS Series in Discrete Mathematics and Theoretical Computer Science, 60:83–99, 2003
+
+P. A. Parrilo. Semidefinite programming relaxations for semialgebraic problems. Mathematical programming, 96(2):293–320, 2003.
+
+D. Henrion and J. Lasserre. Detecting global optimality and extracting solutions in GloptiPoly. In Positive
+polynomials in control, pages 293–310, 2005 [pdf](http://homepages.laas.fr/henrion/papers/extract.pdf)
