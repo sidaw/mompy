@@ -18,14 +18,16 @@ def dict_mono_to_ind(monolist):
         dict[mono]=i
     return dict
 
-def extract_solutions_lasserre(MM, ys, Kmax=10, tol=1e-6):
+def extract_solutions_lasserre(MM, ys, Kmax=10, tol=1e-6, maxdeg = None):
     """
     extract solutions via (unstable) row reduction described by Lassarre and used in gloptipoly
     MM is a moment matrix, and ys are its completed values
     @params - Kmax: the maximum rank allowed to extract
     @params - tol: singular values less than this is truncated.
+    @params - maxdeg: only extract from the top corner of the matrix up to maxdeg
     """
-    M = MM.numeric_instance(ys)
+    M = MM.numeric_instance(ys, maxdeg = maxdeg)
+    
     Us,Sigma,Vs=np.linalg.svd(M)
     #
     count = min(Kmax,sum(Sigma>tol))

@@ -231,6 +231,8 @@ class MomentMatrix(object):
         return Anp, bnp
     
     def get_Ab_slack(self, constraints=None, abs_slack=1e-2, rel_slack=1e-2, slackvector=0):
+        print 'slacks'
+        print abs_slack
         num_constrs = len(constraints) if constraints is not None else 0
         Anp = np.zeros((num_constrs, self.num_matrix_monos))
         bnp = np.zeros((num_constrs,1))
@@ -255,11 +257,12 @@ class MomentMatrix(object):
 
         return Aslack, bslack
         
-    def numeric_instance(self, ys):
+    def numeric_instance(self, ys, maxdeg = None):
         """
         assign the matrix_monos ys and return an np matrix
+        @params - ys: a list of numbers corresponding to self.matrix_monos
+        @params - maxdeg: cutoff the matrix at this degree
         """
-        
         assert len(ys)==len(self.matrix_monos), 'the lengths of the moment sequence is wrong'
         
         G = self.get_LMI_coefficients()
@@ -268,6 +271,12 @@ class MomentMatrix(object):
             num_inst += -val*np.array(matrix(G[i])).flatten()
         num_row_monos = len(self.row_monos)
         mat = num_inst.reshape(num_row_monos,num_row_monos)
+
+        if maxdeg is not None:
+            deglist = [sp.poly(rm, self.vars).total_degree() for rm in self.row_monos]
+            cutoffind = sum([int(d<=maxdeg) for d in deglist])
+            mat = mat[0:cutoffind, 0:cutoffind]
+
         return mat
 
     def pretty_print(self, sol):

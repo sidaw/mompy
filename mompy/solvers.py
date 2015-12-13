@@ -87,7 +87,7 @@ def get_constraint_row_monos(MM, constr):
         Ai[i] = coefdict.get(yi,0)
     return Ai
 
-def solve_ith_GMP(MM, objective, gs, hs, slack = 1e-6):
+def solve_ith_GMP(MM, objective, gs, hs, slack = 0):
     """
     Generalized moment problem solver
     @param - objective: a sympy expression that is the objective
@@ -95,6 +95,7 @@ def solve_ith_GMP(MM, objective, gs, hs, slack = 1e-6):
     each g corresponds to localizing matrices. 
     @param - hs: constraints on the moments,
      not needed for polynomial optimization.
+    @param - slack: add equalities as pairs of inequalities with slack separation.
     """
     cin = get_cvxopt_inputs(MM, hs, slack=slack)
     Bf = MM.get_Bflat()
@@ -111,7 +112,7 @@ def solve_ith_GMP(MM, objective, gs, hs, slack = 1e-6):
     #ipdb.set_trace()
     return solsdp
 
-def solve_GMP(objective, gs = None, hs = None, rounds = 1):
+def solve_GMP(objective, gs = None, hs = None, rounds = 1, slack = 1e-6):
     """
     Outer loop of the generalized moment problem solver
     @param - objective: a sympy expression that is the objective
@@ -156,7 +157,7 @@ def solve_GMP(objective, gs = None, hs = None, rounds = 1):
     objvals = {}
     for i in range(mdeg,mdeg + rounds):
         MM = MomentMatrix(i, list(syms), morder='grevlex')
-        soldict = solve_ith_GMP(MM, objective, constrs, hs)
+        soldict = solve_ith_GMP(MM, objective, constrs, hs, slack = slack)
         soldict['MM'] = MM
         print 'status: ' + soldict['status']
         r =  np.linalg.matrix_rank(MM.numeric_instance(soldict['x']), 1e-2)
