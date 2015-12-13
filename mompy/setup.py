@@ -6,6 +6,4 @@ setup(name='mompy',
       author='sidaw',
       author_email='sidaw@cs.stanford.edu',
       license='MIT',
-      zip_safe=False,
-      test_suite='nose.collector',
-      tests_require=['nose'])
+      zip_safe=False)
