@@ -4,21 +4,19 @@
 Solve a given moment matrix using various ways.
 """
 
-from cvxopt import matrix, sparse, spmatrix, spdiag, solvers
-solvers.options['maxiters'] = 150
-solvers.options['feastol'] = 1e-6
-solvers.options['abstol'] = 1e-7
-solvers.options['reltol'] = 1e-6
-solvers.options['show_progress'] = False
-EPS = 1e-7
+from cvxopt import matrix, sparse, spmatrix, spdiag
+import cvxopt.solvers as cvxsolvers
+cvxsolvers.options['maxiters'] = 150
+cvxsolvers.options['feastol'] = 1e-6
+cvxsolvers.options['abstol'] = 1e-7
+cvxsolvers.options['reltol'] = 1e-6
+cvxsolvers.options['show_progress'] = False
 
 import sympy as sp
 import numpy as np
 import scipy as sc
-import util
 import ipdb
 import itertools
-import cvxopt.solvers
 
 from core import MomentMatrix
 from core import LocalizingMatrix
@@ -94,7 +92,7 @@ def solve_ith_GMP(MM, objective, gs, hs, slack = 1e-6):
     Generalized moment problem solver
     @param - objective: a sympy expression that is the objective
     @param - gs: list of contraints defining the semialgebraic set K,
-    each g corresponds to localizing matrices.
+    each g corresponds to localizing matrices. 
     @param - hs: constraints on the moments,
      not needed for polynomial optimization.
     """
@@ -109,32 +107,39 @@ def solve_ith_GMP(MM, objective, gs, hs, slack = 1e-6):
     Gs=cin['G'] + [Gh['G'] for Gh in Ghs]
     hs=cin['h'] + [Gh['h'] for Gh in Ghs]
     # print Ghs
-    solsdp = cvxopt.solvers.sdp(matrix(objcoeff[0,:]), Gs=Gs, hs=hs, A=cin['A'], b=cin['b'])
-    
+    solsdp = cvxsolvers.sdp(matrix(objcoeff[0,:]), Gs=Gs, hs=hs, A=cin['A'], b=cin['b'])
     #ipdb.set_trace()
     return solsdp
 
-
-
-def solve_GMP(objective, gs, hs, rounds = None):
+def solve_GMP(objective, gs = None, hs = None, rounds = 1):
     """
     Outer loop of the generalized moment problem solver
     @param - objective: a sympy expression that is the objective
-    @param - gs: list of contraints defining the semialgebraic set K,
-    each g corresponds to localizing matrices.
-    @param - hs: constraints on the moments,
-     not needed for polynomial optimization.
+    @param - gs: list of constraints defining the semialgebraic set K,
+    each g corresponds to localizing matrices. These should be non-strict sympy inequalities.
+    @param - hs: constraints on the moments. Currently only supporting equalities.
+    @param - rounds: rounds of relaxation to carry out, default=0.
     """
+    if gs is None: gs = []
+    if hs is None: hs = []
 
     # problem setup here
     constrs = []
     syms = objective.free_symbols
     mindeg = objective.as_poly().total_degree()
+
+    for h in hs:
+        if type(h) == sp.relational.GreaterThan or type(h) ==  sp.relational.LessThan:
+            raise NotImplemented('currently only supporting equalities')
+            
     for g in gs:
         if type(g) == sp.relational.GreaterThan:
             nf = g.lhs - g.rhs
         elif type(g) ==  sp.relational.LessThan:
-            nf = g.rhs - g.lhs
+            nf = (g.rhs - g.lhs).expand()
+        else:
+            raise ValueError('only supporting inequality constraints with >= and <=, ' +
+                             'convert your equality constraints!')
         constrs += [nf]
 
         degnf = nf.as_poly().total_degree()
@@ -147,21 +152,19 @@ def solve_GMP(objective, gs, hs, rounds = None):
     #    print g
     
     mdeg = int( (mindeg+1)/2 )
-    if rounds is None:
-        rounds = 2
 
     objvals = {}
     for i in range(mdeg,mdeg + rounds):
         MM = MomentMatrix(i, list(syms), morder='grevlex')
         soldict = solve_ith_GMP(MM, objective, constrs, hs)
         soldict['MM'] = MM
-        r =  np.linalg.matrix_rank(MM.numeric_instance(soldict['x']), 1e-4)
-        print 'round=%d out of %d,\t rank=%d,\t obj=%.3f' % (i-mdeg+1, rounds, r, soldict['primal objective'])
+        print 'status: ' + soldict['status']
+        r =  np.linalg.matrix_rank(MM.numeric_instance(soldict['x']), 1e-2)
+        print 'round=%d,\t rank=%d,\t size=%d,\t obj=%.3f'\
+            % (i-mdeg+1, r, len(MM), soldict['primal objective'])
+        
         objvals[i] = soldict['primal objective']
     return soldict
-
-def solve_polyopt(objective, gs):
-    pass
 
 def solve_basic_constraints(MM, constraints, slack = 1e-2):
     """
@@ -175,7 +178,7 @@ def solve_basic_constraints(MM, constraints, slack = 1e-2):
     W = R.dot(R.T)
     #W = np.eye(len(MM))
     w = Bf.dot(W.flatten())
-    solsdp = cvxopt.solvers.sdp(c=cin['c'], Gs=cin['G'], hs=cin['h'], Gl=cin['Gl'], hl=cin['hl'])
+    solsdp = cvxsolvers.sdp(c=cin['c'], Gs=cin['G'], hs=cin['h'], Gl=cin['Gl'], hl=cin['hl'])
     #ipdb.set_trace()
     return solsdp
 
@@ -222,7 +225,7 @@ def solve_generalized_mom_coneqp(MM, constraints, pconstraints=None, maxiter = 1
     #ipdb.set_trace()
     for i in xrange(maxiter):
         w = Bf.dot(W.flatten())[:,np.newaxis]
-        sol = solvers.coneqp(P, q, G=Gaug, h=h, dims=dims, A=A_aug, b=b)
+        sol = cvxsolvers.coneqp(P, q, G=Gaug, h=h, dims=dims, A=A_aug, b=b)
     sol['x'] = sol['x'][0:D]
     return sol
 
@@ -271,7 +274,7 @@ def solve_generalized_mom_conelp(MM, constraints, W=None, absslack=1e-4, totalsl
     #ipdb.set_trace()
     for i in xrange(maxiter):
         w = Bf.dot(W.flatten())[:,np.newaxis]
-        sol = solvers.coneqp(P, q, G=Gaug, h=h, dims=dims, A=A_aug, b=b)
+        sol = cvxsolvers.coneqp(P, q, G=Gaug, h=h, dims=dims, A=A_aug, b=b)
     sol['x'] = sol['x'][0:D]
     return sol
 
@@ -307,7 +310,7 @@ def solve_W(Xstar, rank):
     b = matrix([numrow - rank], size=(1,1), tc='d')
     
     x = [np.sum(Xstar.flatten()*matrix(Balphai)) for Balphai in Balpha]
-    sol = cvxopt.solvers.sdp(-matrix(x), Gs=Gs, hs=hs, A=A, b=b)
+    sol = cvxsolvers.sdp(-matrix(x), Gs=Gs, hs=hs, A=A, b=b)
     w = sol['x']
     Wstar = 0
     for i,val in enumerate(w):
@@ -330,8 +333,8 @@ def solve_moments_with_convexiterations(MM, constraints, maxrank = 3, slack = 1e
     tau = []
     for i in xrange(maxiter):
         w = Bf.dot(W.flatten())
-        #solsdp = cvxopt.solvers.sdp(cvxopt.matrix(w), Gs=cin['G'], hs=cin['h'], A=cin['A'], b=cin['b'])
-        solsdp = cvxopt.solvers.sdp(cvxopt.matrix(w), Gs=cin['G'], hs=cin['h'], Gl=cin['Gl'], hl=cin['hl'])
+        #solsdp = cvxsolvers.sdp(matrix(w), Gs=cin['G'], hs=cin['h'], A=cin['A'], b=cin['b'])
+        solsdp = cvxsolvers.sdp(matrix(w), Gs=cin['G'], hs=cin['h'], Gl=cin['Gl'], hl=cin['hl'])
         Xstar = MM.numeric_instance(solsdp['x'])
         W,solW = solve_W(Xstar, maxrank)
         W = np.array(W)
@@ -368,7 +371,7 @@ def test_mmsolvers():
     Gs=cin['G'] + [Gh['G'] for Gh in Ghs]
     hs=cin['h'] + [Gh['h'] for Gh in Ghs]
     
-    sol = solvers.sdp(cin['c'], Gs=Gs, \
+    sol = cvxsolvers.sdp(cin['c'], Gs=Gs, \
                   hs=hs, A=cin['A'], b=cin['b'])
 
     print sol['x']

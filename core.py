@@ -21,10 +21,45 @@ import scipy.sparse #
 import numpy.linalg # for its norm, which suits us better than scipy
 
 from collections import defaultdict
-import util
 import ipdb
 
 EPS = 1e-5
+
+def problem_to_str(obj, gs = None, hs = None, plain = True):
+    strret = ''
+    gpresent = gs is not None and len(gs)>0
+    hpresent = hs is not None and len(hs)>0
+    if not plain:
+        strret += 'Minimizing '
+        strret += '$\mathcal{L}(%s)$' % sp.latex(obj)
+        if gpresent or hpresent:
+            strret += ('\n\nsubject to \t')
+            if gpresent:
+                for g in gs:
+                    strret += ' $%s$, \t' % sp.latex(g)
+                strret += '\n'
+            if hpresent:
+                for h in hs:
+                    strret += '$\mathcal{L}(%s) = 0$, \t' % sp.latex(h)
+            strret = strret.strip(',')
+        else:
+            strret += '\t subject to no constraints'
+    else:
+        strret += 'Minimizing '
+        strret += ' L(%s) ' % str(obj)
+        if gpresent or hpresent:
+            strret += ('\nsubject to \t')
+            if gpresent:
+                for g in gs:
+                    strret += ' %s, \t' % str(g)
+                strret += '\n'
+            if hpresent:
+                for h in hs:
+                    strret += '$L(%s) = 0$, \t' % str(h)
+            strret = strret.strip(',')
+        else:
+            strret += '\t subject to no constraints'
+    return strret
 
 class Measure(object):
     """
@@ -138,10 +173,13 @@ class MomentMatrix(object):
         and represents contraints on entries of the moment matrix.
         """
         Ai = np.zeros(self.num_matrix_monos)
-        coefdict = constr.as_coefficients_dict();
-        
+        constrpoly = constr.as_poly()
+        #ipdb.set_trace()
         for i,yi in enumerate(self.matrix_monos):
-            Ai[i] = coefdict.get(yi,0)
+            try:
+                Ai[i] = constrpoly.coeff_monomial(yi)
+            except ValueError:
+                Ai[i] = 0
         return Ai
 
     def get_LMI_coefficients(self):
@@ -229,7 +267,8 @@ class MomentMatrix(object):
         for i,val in enumerate(ys):
             num_inst += -val*np.array(matrix(G[i])).flatten()
         num_row_monos = len(self.row_monos)
-        return num_inst.reshape(num_row_monos,num_row_monos)
+        mat = num_inst.reshape(num_row_monos,num_row_monos)
+        return mat
 
     def pretty_print(self, sol):
         """
@@ -292,7 +331,7 @@ class LocalizingMatrix(object):
                                         indices, size=(1,len(self.expanded_polys)), tc='d')]
         return Balpha
 
-    
+
 
 if __name__=='__main__':
     # simple test to make sure things run

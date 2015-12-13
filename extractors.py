@@ -8,9 +8,9 @@ import numpy as np
 import scipy as sc
 import scipy.linalg # for schur decomp, which np doesnt have
 import numpy.linalg # for its norm, which suits us better than scipy
-import util
 import itertools
 import ipdb
+import util
 
 def dict_mono_to_ind(monolist):
     dict = {}
@@ -22,6 +22,8 @@ def extract_solutions_lasserre(MM, ys, Kmax=10, tol=1e-6):
     """
     extract solutions via (unstable) row reduction described by Lassarre and used in gloptipoly
     MM is a moment matrix, and ys are its completed values
+    @params - Kmax: the maximum rank allowed to extract
+    @params - tol: singular values less than this is truncated.
     """
     M = MM.numeric_instance(ys)
     Us,Sigma,Vs=np.linalg.svd(M)
