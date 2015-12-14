@@ -1,4 +1,4 @@
-# Mompy
+# mompy
 
 mompy is a package for solving polynomial optimization and the Generalized Moment Problem by relaxing to a semidefinite program. These techniques are described by Lasserre et al. and Parrilo el al. in the references.
 
@@ -21,10 +21,10 @@ The polynomial optimization problem is to
 minimize f(x) subject to g_i(x) >= 0, for i=1,...,N.
 ```
 where x is a real vector and f(x), g_i(x) are polynomials.
-mompy is an implementation of the techniques developed by Parrilo et al. and Lasserre et al. 
-where this problem is relaxed to a semidefinite program.
-
-To minimize f subject to constraints g, one can just write:
+mompy is an implementation of the Lassarre/SOS relaxations to a semidefinite program.
+One can easily encode NP-hard problems in this so specialized solvers are probably needed if you want to run on large problems, which is out of scope of mompy. 
+But it is really easy to try this technique on small problems
+where we want to minimize f subject to constraints g:
 
 ```python
 x,y = sp.symbols('x,y')
