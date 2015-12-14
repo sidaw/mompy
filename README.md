@@ -57,3 +57,12 @@ P. A. Parrilo. Semidefinite programming relaxations for semialgebraic problems. 
 
 D. Henrion and J. Lasserre. Detecting global optimality and extracting solutions in GloptiPoly. In Positive
 polynomials in control, pages 293–310, 2005 [pdf](http://homepages.laas.fr/henrion/papers/extract.pdf)
+
+Our paper is here
+```
+@inproceedings{wang2015polynomial, 
+author = {Sida I. Wang and Arun Chaganty and Percy Liang}, 
+booktitle = {Advances in Neural Information Processing Systems (NIPS)}, 
+title = {Estimating Mixture Models via Mixture of Polynomials}, 
+year = {2015} } 
+```
